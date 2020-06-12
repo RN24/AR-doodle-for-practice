@@ -5,14 +5,15 @@
 //  Created by 西岡亮太 on 2020/06/12.
 //  Copyright © 2020 西岡亮太. All rights reserved.
 //
-
 import UIKit
 import SceneKit
 import ARKit
 
-class ViewController: UIViewController, ARSCNViewDelegate {
+class DoodleViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    
+    private var drawingNode: SCNNode?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,10 +25,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.showsStatistics = true
         
         // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+       
         
         // Set the scene to the view
-        sceneView.scene = scene
+        //sceneView.scene = scene
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -35,6 +36,12 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = [.horizontal, .vertical]
+        configuration.environmentTexturing = .automatic
+        
+
+
+        
 
         // Run the view's session
         sceneView.session.run(configuration)
@@ -46,17 +53,95 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Pause the view's session
         sceneView.session.pause()
     }
+    
+  
+    
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        let node: SCNNode
+        
+        
+        if let drawingNode = drawingNode{
+            node = drawingNode.clone()
+        }else{
+            let lineNode = createBallLine()
+            drawingNode = lineNode
+            node = lineNode
+        }
+ 
+          
+          
+
+          //スクリーン座標系
+          guard let location = touches.first?.location(in: sceneView) else{
+              return
+          }
+          let pos: SCNVector3 = SCNVector3(location.x, location.y, 0.996)
+
+          //ワールド座標系に変換
+          let finalPosition = sceneView.unprojectPoint(pos)
+          node.position = finalPosition
+
+
+          sceneView.scene.rootNode.addChildNode(node)
+    }
+    
+    
+    private func createBallLine() -> SCNNode{
+        let ball = SCNSphere(radius: 0.005)
+        
+        let node = SCNNode(geometry: ball)
+        return node
+    }
+
+//
+//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+//
+//        let ship = SCNScene(named: "art.scnassets/ship.scn")!
+//        let shipNode = ship.rootNode.childNodes.first!
+//        shipNode.scale = SCNVector3(0.1, 0.1, 0.1)
+//
+//        //カメラ座標系で30センチ前
+//        let infrontCamera = SCNVector3Make(0, 0, -0.3)
+//        guard let cameraNode = sceneView.pointOfView else {
+//            return
+//        }
+//
+//        //ワールド座標系に変換
+//
+//        let pointInWorld = cameraNode.convertPosition(infrontCamera, to: nil)
+//
+//        //スクリーン座標系へ変換
+//        var screenPositon = sceneView.projectPoint(pointInWorld)
+//
+//        //スクリーン座標系
+//          guard let location = touches.first?.location(in: sceneView) else{
+//              return
+//          }
+//        screenPositon.x = Float(location.x)
+//        screenPositon.y = Float(location.y)
+//
+//        //ワールド座標系
+//        let finalPosition = sceneView.unprojectPoint(screenPositon)
+//
+//        shipNode.eulerAngles = cameraNode.eulerAngles
+//
+//        shipNode.position = finalPosition
+//        sceneView.scene.rootNode.addChildNode(shipNode)
+//    }
+//
 
     // MARK: - ARSCNViewDelegate
     
-/*
+
     // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
-     
-        return node
-    }
-*/
+//    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor){
+//        print("anchor added")
+//        
+//        if anchor is ARPlaneAnchor{
+//            print("this is ARPlaneAnchor.")
+//        }
+//    }
+
     
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
